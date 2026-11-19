@@ -377,7 +377,11 @@ Repository secrets to add:
 - **`LEGION_DEPLOY_TOKEN`**, from hosting.bloxity.io.
 - **`LEGION_DEPLOY_TOKEN_STAGE`**, from hosting.stage.bloxity.io, to ship to stage too. See docs.bloxity.io › Environments › Getting your game onto stage.
 
-**Not deployed yet.** This folder is not a git repository, and nothing has been pushed or hosted. When it is: the repository is `LEGiON-Platforms/keysprint`, and a push to `main` deploys to https://keysprint.play.bloxity.io (the server's HTTP host is https://keysprint.host.bloxity.io, whose `/health` should answer `{"ok":true,"db":true,"game":"keysprint"}` once Legion's MongoDB is connected). `node tests/live-smoke.mjs` then checks the live game.
+**Live at https://keysprint.play.bloxity.io**, first deployed on 19 November 2026.
+
+- The repository is `asivixlp44-cmyk/keysprint`. Every push to `main` deploys there (the first run took 1 min 27 s).
+- `node tests/live-smoke.mjs` checks the live game. On the first day it loaded the game, joined a server and showed the HUD. Its one console error is a 404 from `api.bloxity.io/v1/domains/resolve` for this host, which comes from Boxity's own side and is probably there until the game is created on Boxity.
+- From the machine used to build the game, `curl` and Node could not reach any `*.bloxity.io` address (the secure connection was reset, the older Lockdown game too), while Chrome could. That is that PC's network, not the deploy.
 
 `bloxity-setup.html` has every field of Bloxity's Create New Game form with copy buttons, and the two covers (`covers/cover-1920x1080.png` and `covers/cover-800x800.png`, rendered by `tests/covers.mjs`).
 
