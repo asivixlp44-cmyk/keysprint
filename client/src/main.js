@@ -243,7 +243,8 @@ function autoClicks(dt) {
 }
 // (the frame loop stops in a hidden tab; once a second this clicks for it, no effects, the server's click bucket still the limit)
 setInterval(() => {
-    if (!document.hidden || !S.auto || !running || A || P.dead || switching || !gotProfile) return;
+    // (only when no frame has run lately: a page that is drawing frames already clicks for itself)
+    if (performance.now() - lastFrameAt < 1500 || !S.auto || !running || A || P.dead || switching || !gotProfile) return;
     autoAcc += autoRateOf(S);
     for (let k = 0; autoAcc >= 1 && k < 12; k++) { autoAcc -= 1; out.n++; out.post = P.tread; const g = clickGain(S, S.x2, S.world, S.sq) * (P.tread >= 0 ? POSTS[P.tread].mult : 1) * (isMega(clicksNow() + 1, S) ? CFG.megaK : 1); out.sp += g; S.pendSp = (S.pendSp || 0) + g; S.pendN = (S.pendN || 0) + 1; }
     autoAcc = Math.min(autoAcc, 1);
@@ -1854,8 +1855,10 @@ let rafN = 0, frameDt = 0;
 // scrolled out of view in a feed (the page doesn't count as hidden then): no sound, nothing worked out or drawn
 let offscreen = false, paused = false;
 if ('IntersectionObserver' in window) new IntersectionObserver((es) => { offscreen = !es[es.length - 1].isIntersecting; audioAway(offscreen || connLost); }).observe($('#app'));
+let lastFrameAt = 0;
 function frame(now) {
     requestAnimationFrame(frame);
+    lastFrameAt = performance.now();
     if (offscreen || paused) { lastFrame = 0; return; }
     rafN++;
     if (skipOdd) { oddFrame = !oddFrame; if (oddFrame) return; }
