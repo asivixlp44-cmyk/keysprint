@@ -107,7 +107,7 @@ try {
     const lg0 = await sp.evaluate(() => window.__log.slice());
     check(lg0.includes('init:keysprint') && lg0.includes('feature:emotes') && lg0.includes('boards:wins,speed,clicks,stage,rebirths,races'), 'init with the slug, emotes registered, the six boards declared');
     check(lg0.includes('screens:panel,lobby,results,gameplay') && lg0.includes('screen:gameplay') && lg0.filter((x) => x === 'loadingEnd').length === 1, 'screens declared (no banners in play), gameplay reported, loadingEnd once');
-    await qa(sp, () => { const q = window.__qa; q.close(); q.teleport(0, 0, q.wallZ(1) - 10, Math.PI); });
+    await qa(sp, () => { const q = window.__qa; q.close(); q.teleport(13, 0, q.wallZ(1) - 10, Math.PI); });
     await sleep(1200);
     await qa(sp, () => window.__qa.die(1, 'ball'));
     await sleep(250);
