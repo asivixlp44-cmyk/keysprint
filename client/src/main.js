@@ -127,7 +127,8 @@ const P = {
 };
 // your Custom Speed (this device's: 0 is your top speed, whatever your Speed makes it); Auto Click, on or off (this device's)
 S.cs = Math.max(0, Math.round(+(storageGet('ks1_cs') || 0)) || 0);
-S.auto = storageGet('ks1_auto') === '1';
+// (a first visit has no choice stored: Auto Click starts ON, so Speed grows from the first second; the AUTO button turns it off and that sticks)
+{ const au = storageGet('ks1_auto'); S.auto = au === null ? true : au === '1'; }
 const myTeam = new Team();
 let me = null, localAvatarReq = 0;
 function buildMe() {
@@ -240,6 +241,14 @@ function autoClicks(dt) {
     autoAcc += dt * autoRateOf(S);
     for (let k = 0; autoAcc >= 1 && k < 4; k++) { autoAcc -= 1; doClick('auto'); }
 }
+// (the frame loop stops in a hidden tab; once a second this clicks for it, no effects, the server's click bucket still the limit)
+setInterval(() => {
+    if (!document.hidden || !S.auto || !running || A || P.dead || switching || !gotProfile) return;
+    autoAcc += autoRateOf(S);
+    for (let k = 0; autoAcc >= 1 && k < 12; k++) { autoAcc -= 1; out.n++; out.post = P.tread; const g = clickGain(S, S.x2, S.world, S.sq) * (P.tread >= 0 ? POSTS[P.tread].mult : 1) * (isMega(clicksNow() + 1, S) ? CFG.megaK : 1); out.sp += g; S.pendSp = (S.pendSp || 0) + g; S.pendN = (S.pendN || 0) + 1; }
+    autoAcc = Math.min(autoAcc, 1);
+    flushClicks();
+}, 1000);
 actions.toggleAuto = (on) => {
     S.auto = on === undefined ? !S.auto : !!on;
     storageSet('ks1_auto', S.auto ? '1' : '0');
@@ -406,7 +415,7 @@ function hubTouch(t) {
         if (Math.abs(b.z - endPortal.z) < 2 && Math.abs(b.x - endPortal.x) < endPortal.r) { if (t - P.endAt > 3 && !anyPopup()) { sfx('whoosh'); openPanel('tele', 'worlds'); } P.endAt = t; }
     } else {
         P.archFrom = -1;
-        ballVeil(0);
+        ballVeil(0); ballHint = '';
         // walking through the portal's gate, or the gate's
         if (Math.abs(b.x - worldsPortal.x) < 7 && Math.abs(b.z - worldsPortal.z) < 1.6) { if (t - P.portalAt > 3 && !anyPopup()) { sfx('whoosh'); openPanel('tele', 'worlds'); } P.portalAt = t; }
         if (Math.abs(b.x - playGate.x) < 7 && Math.abs(b.z - playGate.z) < 1.6) { if (t - P.gateAt > 3 && !S.queued && !anyPopup()) { sfx('whoosh'); pressPlay(); } P.gateAt = t; }
@@ -427,7 +436,9 @@ function archCheck(t, b, k) {
 // screen's edges glow as the next one closes in; out on the side of a wide keyboard, once one's gone by and the way's clear, a new
 // runner is told to GO; a ball that touches you flattens you -----
 const ballsNear = [], tipsShown = new Set();
-let veilK = -1, rollT = 0, lastAhead = 1e9, passT = -9, goSaid = -9;
+// (the stage bar's words for a newer player: what to do right now about the balls; '' for everyone else and off the Sprintway)
+let ballHint = '', ballDanger = false;
+let eggTold = false, veilK = -1, rollT = 0, lastAhead = 1e9, passT = -9, goSaid = -9;
 function ballVeil(k) { if (Math.abs(k - veilK) > 0.03 || (k === 0 && veilK !== 0)) { veilK = k; $('#veil').style.opacity = k.toFixed(2); } }
 function ballTouch(t, k, b) {
     const nowS = net.now() / 1000, w = S.world || 0, safe = t < P.shieldUntil;
@@ -449,6 +460,14 @@ function ballTouch(t, k, b) {
     ballVeil(inLine && !safe ? clamp(1 - (eta - 0.25) / 1.4, 0, 1) * 0.8 : 0);
     // out on the side of a wide keyboard, just after one's gone by, and the way to the next is clear: GO! (for new runners)
     const Z = !inLine && zoneAt(b.z, 0);
+    // what to do now, said plainly
+    if ((S.cleared || 0) < 10) {
+        const inZone = !!zoneAt(b.z, 0), N2 = inZone ? ZONES[zoneAt(b.z, 0).idx + 1] : null;
+        if (inLine && inZone) { ballHint = eta < 4 ? '⚠ BALL! GO TO THE SIDE!' : '👉 Step to the SIDE!'; ballDanger = eta < 4; }
+        else if (!inZone) { ballHint = '🏃 RUN to the next keyboard!'; ballDanger = false; }
+        else if (N2 && runClear(nowS, b.z, N2.z1 - 5, P.v * 0.95)) { ballHint = '✅ GO! RUN UP THE PATH!'; ballDanger = false; }
+        else { ballHint = '⏳ WAIT: let the ball pass'; ballDanger = false; }
+    } else { ballHint = ''; ballDanger = false; }
     if (Z && t - passT < 1.2 && t - goSaid > 3 && (S.cleared || 0) < 60) {
         const N = ZONES[Z.idx + 1];
         if (N && runClear(nowS, b.z, N.z1 - 5, P.v * 0.95)) { goSaid = t; bigText('GO!', '#7dff6b'); }
@@ -618,7 +637,7 @@ function stageHud() {
     // (the words made again only when the stage or your Speed against it changes)
     const nk = w * 1000 + k * 2 + (low ? 1 : 0);
     if (nk !== stageNameK) { stageNameK = nk; stageNameS = 'STAGE ' + (k + 1) + ' · ' + stageName(w, k); stageTxtS = low ? 'Recommended Speed ' + fmt(rec) : k + 1 < WALLS_N ? 'to the next checkpoint!' : 'to the finish!'; }
-    stageBar(true, stageNameS, f, stageTxtS, low, k);
+    stageBar(true, stageNameS, f, ballHint || stageTxtS, low || ballDanger, k);
 }
 // =====================================================================================
 // Ball Rush: the queue, the start line, your race
@@ -1604,6 +1623,8 @@ function onPadOk(m) {
     FX.coinBurst(FX.tmpV.set(P.b.x, P.b.y + 3, P.b.z));
     if (!lowQ) screenConfetti(m.first ? 30 : 10);
     S.wins += n; S.totalWins = (S.totalWins || 0) + n;
+    // (a new player can afford the first Egg after two checkpoints, and nothing says so)
+    if (!S.hatched && S.wins >= JAWBREAKERS[0].wins && !eggTold) { eggTold = true; setTimeout(() => toast('🥚 You can afford an Egg! Press R to go home and hatch a pet: it boosts every click', '#ffe24a'), 2200); }
     P.padT[m.k] = clockT;
     if (view && view.setPad) view.setPad(m.k, false);
     const best = (S.bests && S.bests[S.world || 0]) || 0;
@@ -1968,9 +1989,10 @@ async function play() {
     autoState(S.auto);
     const fresh = !S.clicks && !S.pads;
     if (fresh) {
-        setTimeout(() => bigText('CLICK TO GET FASTER!', '#ffe24a'), 500);
+        setTimeout(() => bigText('YOUR SPEED GROWS!', '#ffe24a'), 500);
         setTimeout(() => toast(isTouch ? '⌨️ Tap CLICK (or the world) for Speed, then run the Sprintway and dodge the giant balls! Every checkpoint: Wins!' : '⌨️ Click (or press E) for Speed, then run the Sprintway (WASD) and dodge the giant balls! Every checkpoint: Wins!', '#ffffff'), 1600);
-    } else toast('👋 Welcome back, ' + (S.name || 'Clicker') + '!', '#ffffff');
+        setTimeout(() => toast('🤖 Auto Click is ON: free Speed every second. Press CLICK! for even more!', '#7dff6b'), 3600);
+    } else toast('👋 Welcome back, ' + (S.name || 'Clicker') + '!' + (S.auto ? ' 🤖 Auto Click is on.' : ''), '#ffffff');
     setTimeout(() => { if (audioSuspended()) toast('🔊 Tap anywhere for sound!', '#7de8ff'); }, 3500);
     // the daily reward: straight away for someone back, after the first gate for someone new
     if (!fresh) setTimeout(offerDaily, 1500);
@@ -2082,9 +2104,8 @@ async function prepareWorld() {
     if (!sounds) await buildAsmr(pause, getQuality() === 'low');
     musicLite(getQuality() === 'low');
     prerenderMusic();
-    // every HUD screen and panel painted once, invisibly (the browser compiles how to draw them now)
-    step('Warming up your fingers…', 0.55);
-    {
+    // every HUD screen and panel painted once, invisibly (the browser compiles how to draw them now): below, while the shaders compile
+    const warmUi = async () => {
         const hud = $('#hud');
         hud.hidden = false; hud.classList.add('warmui');
         measureHud();
@@ -2092,7 +2113,7 @@ async function prepareWorld() {
         for (let i = 0; i < (lite ? 2 : 4); i++) await new Promise((r) => { requestAnimationFrame(r); setTimeout(r, 120); });
         endPanels();
         hud.classList.remove('warmui'); hud.hidden = true;
-    }
+    };
     // the warm-up: every shader the game uses (the Sprintway's, the lasers', the pets', a race's, every effect, the bubble) compiled and drawn
     // once now, not in play
     step('Getting ready to run…', 0.75);
@@ -2112,7 +2133,11 @@ async function prepareWorld() {
     if (warmA && warmA.jelly) warmA.jelly.showAll();
     camera.position.set(0, 60, 130); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
     gpuName();
-    try { await Promise.race([renderer.compileAsync(scene, camera), sleep(1500)]); } catch (e) { /* later */ }
+    // (the shaders compile on the graphics side: the panels are warmed meanwhile, instead of one after the other)
+    step('Warming up your fingers…', 0.85);
+    const compiling = Promise.race([renderer.compileAsync(scene, camera), sleep(1500)]).catch(() => { /* later */ });
+    try { await warmUi(); } catch (e) { console.warn('[warm ui]', e); }
+    await compiling;
     const culled = [];
     scene.traverse((o) => { if ((o.isMesh || o.isPoints || o.isSprite || o.isLine) && o.frustumCulled) { o.frustumCulled = false; culled.push(o); } });
     render();

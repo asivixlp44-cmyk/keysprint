@@ -20,12 +20,14 @@ const localBoxity = {
 // (Dev builds and the test runs keep using node_modules.)
 const THREE_VERSION = JSON.parse(readFileSync(new URL('./node_modules/three/package.json', import.meta.url), 'utf8')).version;
 const THREE_CDN = `https://cdn.jsdelivr.net/npm/three@${THREE_VERSION}`;
+// (jsDelivr's three.module.min.js still imports the 1.4 MB unminified ./three.core.js: the map sends that to the 406 KB minified core, the
+// one that is preloaded below, so the page downloads one small copy of it, not two)
 const threeFromCdn = {
     name: 'three-from-cdn',
     apply: 'build',
     transformIndexHtml() {
         return [
-            { tag: 'script', attrs: { type: 'importmap' }, children: JSON.stringify({ imports: { three: `${THREE_CDN}/build/three.module.min.js`, 'three/addons/': `${THREE_CDN}/examples/jsm/` } }), injectTo: 'head-prepend' },
+            { tag: 'script', attrs: { type: 'importmap' }, children: JSON.stringify({ imports: { three: `${THREE_CDN}/build/three.module.min.js`, 'three/addons/': `${THREE_CDN}/examples/jsm/`, [`${THREE_CDN}/build/three.core.js`]: `${THREE_CDN}/build/three.core.min.js` } }), injectTo: 'head-prepend' },
             { tag: 'link', attrs: { rel: 'preconnect', href: 'https://cdn.jsdelivr.net', crossorigin: '' }, injectTo: 'head' },
             { tag: 'link', attrs: { rel: 'modulepreload', href: `${THREE_CDN}/build/three.module.min.js`, crossorigin: '' }, injectTo: 'head' },
             { tag: 'link', attrs: { rel: 'modulepreload', href: `${THREE_CDN}/build/three.core.min.js`, crossorigin: '' }, injectTo: 'head' },

@@ -101,7 +101,7 @@ For development:
 
 - **Clicks.**
   - Click with **CLICK!** (bottom middle), **E**, a left-click or tap on the world (not a drag), or B / RB on a controller.
-  - **AUTO** (beside CLICK!) turns on **Auto Click**: 3 clicks a second, +0.5 for each level of Auto Clicker Pro. It's free, and it keeps clicking while you run.
+  - **AUTO** (beside CLICK!) is **Auto Click**: 3 clicks a second, +0.5 for each level of Auto Clicker Pro. It's free, it keeps clicking while you run, and **it starts ON** for a first visit (turn it off with the button and that sticks on this device). It also clicks in a tab that's in the background, once a second, so an AFK player still grows.
   - Every click is **+1 Speed times all your boosts**:
     - rebirths (x1.5, x2 ...), pets, your trail and aura;
     - Clicky Switches (+15% a level), the world you're in (x1, x4, x16, x64);
@@ -313,6 +313,22 @@ Everything goes through `client/src/bloxity.js`. Its one `onUserChanged` subscri
   - The Sprintway draws about 210k triangles at High (about 72k on Low).
   - The phones are simulated (a desktop chip and a throttled CPU). Nothing has been measured on a real phone or on the Legion servers yet.
 
+## Keeping players (what the live stats said)
+
+On 20 November 2026, a day after launch, `/api/stats` showed 1,199 sessions: a median of 2.6 minutes (a mean of 5.7), 21% gone inside a minute, and phones shorter than desktops. The numbers that explained it:
+- **49% of sessions made 3 clicks or fewer** and lasted about 80 s. Players who clicked 50+ times lasted about 420 s. Many ran the Sprintway like an obstacle course, passed Stage 1, died twice at Stage 2 with no Speed, and left.
+- 35% never reached a first checkpoint (median 57 s); 64% did, at a median of 61 s.
+- Loading took 8.6 s on desktop and 11.1 s on phones (median).
+
+What changed because of it:
+- Auto Click starts ON, so Speed grows from the first second (and in the background).
+- A newer player (under 10 checkpoints) gets the words in the stage bar: "WAIT: let the ball pass", "GO! RUN UP THE PATH!", "BALL! GO TO THE SIDE!".
+- The Egg quest comes right after Stage 3, and a toast says when the first Egg (5 Wins) is affordable.
+- The page no longer downloads the unminified 1.4 MB `three.core.js` (jsDelivr's `three.module.min.js` still imports it): an import-map entry sends it to the minified core, so a load is about 1.9 MB, not 3.3 MB.
+- The shader compile now runs while the HUD panels are warmed, not after them.
+
+Not changed, and worth watching in the next day's stats: the loading time itself (the shader warm-up is the longest step), phones under 30 FPS (their sessions average 2 to 2.5 minutes), and the few players who finish the whole game's economy in under an hour.
+
 ## Testing
 
 Test tools install on their own: `npm --prefix tests install`. Browser runs need Chrome. Their own ports (3212 / 5733; `TEST_PORT` and `VITE_PORT` move them, so two suites can run side by side) leave a running game on 3205 alone.
@@ -330,6 +346,7 @@ Test tools install on their own: `npm --prefix tests install`. Browser runs need
   - screens declared and `gameplay` reported, `loadingEnd` once;
   - pressing a button during the countdown does nothing, and REVIVE respawns only on `respawn() === true`;
   - an ad break pauses the frame loop and resumes it.
+- **`tests/retention.mjs`**: a first visit has Auto Click ON and Speed grows with no input; it keeps clicking with no frames (a hidden tab); turning it off sticks; the stage bar tells a new player to wait, to GO, or to step to the side.
 - **`tests/hazards.mjs`**: on a real screen, standing on the path the next ball flattens you; out on the side of a safe keyboard two balls roll by; in the middle of one you're flattened; a revive's bubble keeps you safe a moment; the path climbs and you never fall through it.
 - **`tests/autopilot.mjs`**: the autopilot plays the whole loop: Auto Click, through the gate and round the drain, the ball runs, checkpoints, a knock-out and revive, Train onto a Power Key, Custom Speed. Then full Ball Rush races on all four maps, and a run in each other world. No snaps, no console errors.
 - **`tests/passable.mjs`**: every stage of every world is passed at its Recommended Speed by the autopilot dodging the balls (it prints each stage's tightest window and the deaths it took).

@@ -342,14 +342,14 @@ export function tasksFor(day) {
 // kind: what's counted (best: stages passed in the world you're in; topSpeed: the most Speed you've had; keyClicks: clicks on a Power
 // Key; totalWins: Wins earned all told, what opens the Power Keys)
 export const QUESTS = [
-    { kind: 'topSpeed', n: 150, text: 'Click to gain Speed: reach 150 Speed!', gems: 2 },
+    { kind: 'topSpeed', n: 150, text: 'Gain Speed: reach 150 Speed!', gems: 2 },
     { kind: 'best', n: 1, text: 'Dodge a ball: reach the Stage 2 checkpoint', wins: 1 },
     { kind: 'clicks', n: 300, text: 'Click 300 times (Auto Click helps!)', gems: 2 },
     { kind: 'best', n: 2, text: 'Hide on a safe keyboard, then run: pass Stage 2', gems: 3 },
     { kind: 'upgrades', n: 1, text: 'Buy an upgrade', gems: 3 },
     { kind: 'best', n: 3, text: 'Dodge the rolling balls: pass Stage 3', wins: 3 },
+    { kind: 'hatch', n: 1, text: 'Hatch an Egg for a pet (5 Wins: press R, then walk to an Egg)', wins: 2 },
     { kind: 'totalWins', n: 10, text: 'Earn 10 Wins: the Tab Key opens (+2 / click)!', gems: 3 },
-    { kind: 'hatch', n: 1, text: 'Hatch an Egg for a pet', wins: 2 },
     { kind: 'best', n: 4, text: 'Faster balls ahead: pass Stage 4', gems: 4 },
     { kind: 'megas', n: 10, text: 'Land 10 MEGA clicks (every 20th click!)', gems: 3 },
     { kind: 'topSpeed', n: 5000, text: 'Reach 5,000 Speed', wins: 6 },

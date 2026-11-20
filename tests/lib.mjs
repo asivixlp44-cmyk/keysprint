@@ -63,10 +63,12 @@ export async function open(browser, url, o) {
     page.on('requestfinished', (r) => reqDone(r, 'ok'));
     page.on('requestfailed', (r) => reqDone(r, 'failed'));
     await page.setViewport({ width: o.w || 1280, height: o.h || 720, deviceScaleFactor: o.dpr || 1, isMobile: !!o.touch, hasTouch: !!o.touch });
-    await page.evaluateOnNewDocument((q, uid) => {
+    // (Auto Click starts ON for a first visit; the tests that count clicks by hand start with it off: o.autoOn leaves the game's own default)
+    await page.evaluateOnNewDocument((q, uid, autoOn) => {
         if (q) localStorage.setItem('ks1_quality', q);
         if (uid) localStorage.setItem('ks1_uid', uid);
-    }, o.q || '', o.uid || '');
+        if (!autoOn && localStorage.getItem('ks1_auto') === null) localStorage.setItem('ks1_auto', '0');
+    }, o.q || '', o.uid || '', !!o.autoOn);
     if (o.sdkStub) {
         await page.setRequestInterception(true);
         page.on('request', (r) => (r.url().includes('legion-sdk') ? r.respond({ status: 200, contentType: 'application/javascript', body: o.sdkStub }) : r.continue()));
